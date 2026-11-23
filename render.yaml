@@ -1,0 +1,70 @@
+services:
+  # 1. Django Web Service
+  - type: web
+    name: email-automation-web
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn email_automation.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: "0"
+      - key: CLOUD_PLATFORM
+        value: "RENDER"
+      - key: DOMAIN
+        generateValue: true # Render will set the public URL
+      - key: PORD_SECRET_KEY
+        generateValue: true
+      - key: PROD_FIELD_ENCRYPTION_KEY
+        value: "W8kBH68PL7KbS3KurgsOpDxbcmShhA4FqYV-jizbdhQ="
+      - key: POSTGRES_URL
+        fromDatabase:
+          name: email-automation-db
+          property: connectionString
+      - key: REDIS_PROD_HOST
+        fromService:
+          type: redis
+          name: email-automation-redis
+          property: connectionString
+
+  # 2. Celery Worker (Processes & Schedules Emails)
+  - type: worker
+    name: email-automation-celery
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A email_automation worker -l info -B --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: "0"
+      - key: CLOUD_PLATFORM
+        value: "RENDER"
+      - key: PORD_SECRET_KEY
+        fromService:
+          type: web
+          name: email-automation-web
+          envVarKey: PORD_SECRET_KEY
+      - key: PROD_FIELD_ENCRYPTION_KEY
+        value: "W8kBH68PL7KbS3KurgsOpDxbcmShhA4FqYV-jizbdhQ="
+      - key: POSTGRES_URL
+        fromDatabase:
+          name: email-automation-db
+          property: connectionString
+      - key: REDIS_PROD_HOST
+        fromService:
+          type: redis
+          name: email-automation-redis
+          property: connectionString
+
+# 3. Redis Instance
+  - type: redis
+    name: email-automation-redis
+    ipAllowList: [] # Internal network only
+
+# 4. PostgreSQL Database
+databases:
+  - name: email-automation-db
+    databaseName: automail
+    user: automail_user
