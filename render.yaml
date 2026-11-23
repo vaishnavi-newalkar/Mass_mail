@@ -13,13 +13,15 @@ services:
         value: "0"
       - key: CLOUD_PLATFORM
         value: "RENDER"
+      - key: ALLOWED_PROD_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
       - key: DOMAIN
-        generateValue: true
+        value: "https://email-automation-zwnr.onrender.com"
       - key: PORD_SECRET_KEY
         generateValue: true
       - key: PROD_FIELD_ENCRYPTION_KEY
         value: "W8kBH68PL7KbS3KurgsOpDxbcmShhA4FqYV-jizbdhQ="
       - key: POSTGRES_URL
-        sync: false # Set via free Supabase / Neon / Render Postgres
+        sync: false
       - key: REDIS_PROD_HOST
-        sync: false # Set via free Upstash Redis
+        sync: false
