@@ -155,11 +155,11 @@ if DEBUG:
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # for production
 
-    EMAIL_HOST = env('EMAIL_HOST')
+    EMAIL_HOST = env.get_value('EMAIL_HOST', default='smtp.example.com')
     EMAIL_PORT = 465
 
-    EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-    EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+    EMAIL_HOST_USER = env.get_value('EMAIL_HOST_USER', default='user@example.com')
+    EMAIL_HOST_PASSWORD = env.get_value('EMAIL_HOST_PASSWORD', default='password')
 
     DEFAULT_FROM_EMAIL = Address(display_name="AtMailWin", addr_spec=EMAIL_HOST_USER)
 
@@ -245,10 +245,10 @@ else:
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': f"{env('REDIS_PROD_HOST')}/0" if not DEBUG else "redis://127.0.0.1:6379/0",
+        'LOCATION': f"{env.get_value('REDIS_PROD_HOST', default='redis://127.0.0.1:6379')}/0" if not DEBUG else "redis://127.0.0.1:6379/0",
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'PASSWORD': env('REDIS_PASSWORD') if not DEBUG else ""
+            'PASSWORD': env.get_value('REDIS_PASSWORD', default="") if not DEBUG else ""
         },
         'TIMEOUT': 300,  # Set the cache timeout in seconds
     }
@@ -328,16 +328,18 @@ if DEBUG:
 else:
     MEDIA_URL = '/media/'
 
-    # Define the storage settings for media files
-    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-    GS_BUCKET_NAME = env("BUCKET_NAME")
-    GS_PROJECT_ID = env("PROJECT_ID")
-    GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-        BASE_DIR.joinpath(env("FIREBASE_CRED_PATH"))
-    )
-    GS_DEFAULT_ACL = "publicRead"  # Optional: Set ACL for public access
-    GS_QUERYSTRING_AUTH = True  # Optional: Enable querystring authentication
-    GS_FILE_OVERWRITE = False # prevent overwriting
+    if env.get_value('FIREBASE_CRED_PATH', default=''):
+        DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+        GS_BUCKET_NAME = env.get_value("BUCKET_NAME", default="")
+        GS_PROJECT_ID = env.get_value("PROJECT_ID", default="")
+        GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+            BASE_DIR.joinpath(env("FIREBASE_CRED_PATH"))
+        )
+        GS_DEFAULT_ACL = "publicRead"
+        GS_QUERYSTRING_AUTH = True
+        GS_FILE_OVERWRITE = False
+    else:
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
